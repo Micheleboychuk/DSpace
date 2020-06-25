@@ -129,14 +129,21 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
         String[] valuesLocale = values.get(currentLocale.getLanguage());
         String[] labelsLocale = labels.get(currentLocale.getLanguage());
         int dflt = -1;
-        Choice v[] = new Choice[valuesLocale.length];
-        for (int i = 0; i < valuesLocale.length; ++i) {
-            v[i] = new Choice(valuesLocale[i], valuesLocale[i], labelsLocale[i]);
-            if (valuesLocale[i].equalsIgnoreCase(query)) {
-                dflt = i;
+        int found = 0;
+        List<Choice> v = new ArrayList<Choice>();
+        for (int i = 0; i < values.length; ++i) {
+            if (query == null || StringUtils.containsIgnoreCase(values[i], query)) {
+                if (found >= start && v.size() < limit) {
+                    v.add(new Choice(null, values[i], labels[i]));
+                    if (values[i].equalsIgnoreCase(query)) {
+                        dflt = i;
+                    }
+                }
+                found++;
             }
         }
-        return new Choices(v, 0, v.length, Choices.CF_AMBIGUOUS, false, dflt);
+        Choice[] vArray = new Choice[v.size()];
+        return new Choices(v.toArray(vArray), start, found, Choices.CF_AMBIGUOUS, false, dflt);
     }
 
     @Override
@@ -161,7 +168,7 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
     }
 
     @Override
-    public String getLabel(String field, String key, String locale) {
+    public String getLabel(String key, String locale) {
         init();
 
         // Get default if locale is empty
@@ -185,8 +192,8 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
         }
     }
 
-    protected String getDefaultLocale() {
-        Context context = new Context();
-        return context.getCurrentLocale().getLanguage();
+    @Override
+    public boolean isScrollable() {
+        return true;
     }
 }
